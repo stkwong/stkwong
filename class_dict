@@ -1,0 +1,187 @@
+import numpy as np
+from decimal import *
+from operator import methodcaller
+from mycode.vect_cal import *
+
+class Point:
+    def __init__(self, x, y, z):
+        self.x = Decimal(x)
+        self.y = Decimal(y)
+        self.z = Decimal(z)
+        self.cor = np.asarray([self.x, self.y, self.z])
+        self.planelist = []
+        self.axislist = []
+        self.spacelist = []
+        self.priplane = ""
+        #self.axislist = axislist
+        #self.refplane = refplane
+
+class Axis:
+    _registry = [ ]
+    def __init__(self):
+        self.ptlist = []
+        self.corlist = []
+        self.refplane = ""
+        self.planelist = []
+        self.spacelist = []
+        self.planeanglelist = []
+        self.keylenlist = []
+        self.keywidlist = []
+        self.vec = ""
+        self.axisdirlist = ""
+        self.contype = ""
+        self.condata = []
+        self.coverplane = []
+        self.laptype_domin = ""
+        self.laptype = ""
+        self.condir = []
+        self.normlist = []
+
+
+    # def __init__(self, ptlist, corlist, refplane, refplane_norm, plane_list, angle_list, keylen_list, keywid_list):
+    #     self.ptlist = ptlist.split(";")
+    #     self.corlist = []
+    #     corlistA = corlist.split(";")
+    #     for i in range(len(corlistA)):
+    #         self.corlist.append(np.asarray(list(map(Decimal, corlistA[i].split("_")))))
+    #     #self.corlist = list(map(np.asarray, list(map(methodcaller("split", "_"), corlist.split(";")))))
+    #     self.refplane = refplane
+    #     self.refplane_norm = refplane_norm
+    #     self.plane_list = plane_list.split(";")
+    #     self.angle_list = list(map(Decimal, angle_list.split(";")))
+    #     self.keylen_list = list(map(Decimal,keylen_list.split(";")))
+    #     self.keywid_list = list(map(Decimal,keywid_list.split(";")))
+    #
+    #     posangle_list = []
+    #     for plane_ang in self.angle_list:
+    #         if plane_ang >= 0:
+    #             posangle_list.append(plane_ang)
+    #         else:
+    #             posangle_list.append(Decimal(360.0) + plane_ang)
+    #     sortindList = sorted( range( len( posangle_list ) ) , key=lambda k: posangle_list[ k ] )
+    #     self.sortplane_list = []
+    #
+    #     for ind in range(len(posangle_list)):
+    #         self.sortplane_list.insert(ind, self.plane_list[sortindList[ind]])
+    #     self.forunitvec = np.subtract(self.corlist[1], self.corlist[0])/np.linalg.norm(np.subtract(self.corlist[1], self.corlist[0]))
+    #     self._registry.append( self )
+
+    def createlapoutunitvec(self, dirforunitvec, dirnormunitvec):
+        return tounitNorm("vec", dirforunitvec, dirnormunitvec)
+        #return unitvec
+
+class Plane:
+    _registry = []
+    # to be modified (del: orient, mat1, mat2, thk, edge1, edge2, edgethk, coverthk) (rename: type to shape)
+    def __init__(self, mat1, mat2, thk, edge1, edge2, edgethk, coverthk, dogboner, ptlist, prirate, laplength_90, laplength_180, laplength_diagonal):
+        self.mat1 = mat1
+        self.mat2 = mat2
+        self.thk = Decimal(thk)
+        self.edge1 = edge1
+        self.edge2 = edge2
+        if edgethk == "N/A":
+            self.edgethk = "N/A"
+        else:
+            self.edgethk = Decimal(edgethk)
+        if coverthk == "N/A":
+            self.coverthk = "N/A"
+        else:
+            self.coverthk = Decimal( coverthk )
+        self.dogboner = dogboner
+        # to be modified - delete? as the plane is not in contact to the points
+        self.ptlist = ptlist.split("_")
+        self.corlist = []
+        self.spacelist = []
+        self.type = ""
+        self.axislist = []
+        self.axisdirlist = []
+        self.norm = np.asarray([])
+        self.prirate = prirate
+        self.laplength_180 = laplength_180
+        self.laplength_90 = laplength_90
+        self.laplength_diagonal = laplength_diagonal
+
+        # to be modified - to create a list of mid point of a plane
+        # self.timmidcorList = []
+        #self.type = type
+        # self.corlist = []
+        # corlistA = corlist.split( "_" )
+        # for i in range( len( corlistA ) ):
+        #     self.corlist.append( np.asarray( list( map( Decimal , corlistA[ i ].split( ";" ) ) ) ) )
+        # #self.corlist = list(map(np.asarray, list(map(methodcaller("split", ";"), corlist.split("_")))))
+        # self.spacelist = spacelist.split("_")
+        # self.axislist = axislist.split(";")
+        # self.axisdirlist = axisdirlist.split(";")
+        # self.normunitvec = tounitNorm("array", self.corlist)
+        # self.outcorlist = []
+        # self.straptList = [ ]
+        # self.shaptList = []
+        # self._registry.append(self)
+
+class Space:
+    _registry = [ ]
+    def __init__(self, type1, type2, planelist):
+        self.type1 = type1
+        self.type2 = type2
+        self.planelist = planelist.split("_")
+        self.axislist = []
+        self.ptlist = []
+        self._registry.append(self)
+
+
+def createptClass(ptstr):
+    ptcomList = ptstr.split("!")
+    ptDict = {}
+    ptList = [ ]
+    for i in range(len(ptcomList)):
+        if ptcomList[i] != "NL":
+            ptList.append(ptcomList[i])
+        else:
+            ptDict[ptList[0]] = Point(ptList[1], ptList[2], ptList[3])
+            ptList = [ ]
+    return ptDict
+
+def createplaneClass(planestr):
+    planecomList = planestr.split( "!" )
+    planeDict = {}
+    planeList = [ ]
+    for i in range( len( planecomList ) ):
+        if planecomList[ i ] != "NL":
+            planeList.append( planecomList[ i ] )
+        else:
+            planeDict[planeList[0]] = Plane(planeList[1], planeList[2], planeList[3], planeList[4], planeList[5], planeList[6], planeList[7] ,planeList[8], planeList[9], planeList[10],planeList[11], planeList[12], planeList[13])
+            planeList = [ ]
+    return planeDict
+
+def createspaceClass(spacestr):
+    spacecomList = spacestr.split("!")
+    spaceDict = {}
+    spaceList = [ ]
+    for i in range(len(spacecomList)):
+        if spacecomList[i] != "NL":
+            spaceList.append(spacecomList[i])
+        else:
+            spaceDict[spaceList[0]] = Space(spaceList[1], spaceList[2], spaceList[3])
+            spaceList = [ ]
+    return spaceDict
+
+    # creating outcorList in Plane class
+    # for plane in planeDict:
+    #     outcorDict = {}
+    #     shimagDict = {}
+    #     for axis in planeDict[plane].axislist:
+    #         shimagDict[axis] = []
+    #         if len(axisDict[axis].plane_list) == 1:
+    #             shimagDict[axis].append(0)
+    #         else:
+    #             shimagDict[axis].append(max(projected_len(axisDict[axis].plane_list)))
+    #     for ptno in planeDict[plane].corlist:
+    #         outcorDict[ptno] = []
+    #         movevec = np.asarray([0,0,0])
+    #         for pt_axis in ptDict[ptno].axisList:
+    #             if pt_axis in planeDict[plane].axislist:
+    #                 movevec = movevec + shimagDict[pt_axis] * createlapoutunitvec
+    #         outcorDict[ptno].append(ptDict[ptno].cor + movevec)
+    #     planeDict[plane].outcorList = outcorDict[]
+
+    #return axisDict
